@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BIOOM50 Challenge</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eaf6f6;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 400px;
+      margin: 50px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2, h3 {
+      text-align: center;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="auth-box">
+  <h2 id="auth-title">Sign Up</h2>
+  <input type="text" id="name" placeholder="Your Name" />
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Password" />
+  <button onclick="signup()">Sign Up</button>
+  <p>Already registered? <a href="#" onclick="toggleAuth()">Login</a></p>
+</div>
+
+<div class="container hidden" id="main-box">
+  <h2 id="welcome-msg">Welcome</h2>
+  <h3 id="mission-title">Day 1 Mission</h3>
+  <p id="mission-text"></p>
+  <button id="done-btn" onclick="markDone()">Done</button>
+  <p id="timer-info" style="color: green;"></p>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+const missions = [
+  "Write down 3 things you're grateful for.",
+  "Drink at least 8 glasses of water today.",
+  "Smile at yourself in the mirror for 1 minute.",
+  "Take a 10-minute walk outside.",
+  "Send a kind message to a friend.",
+  "Help someone without expecting anything in return.",
+  "Listen to your favorite song with full attention.",
+  "Take 5 deep breaths slowly and mindfully.",
+  "Clean or organize one small space around you.",
+  "Write a short letter to your future self.",
+  "Read a motivational quote and reflect on it.",
+  "Avoid social media for 1 hour today.",
+  "Compliment someone genuinely.",
+  "Spend 10 minutes in silence with no distractions.",
+  "Eat one healthy meal today mindfully.",
+  "Write down one small goal for this week.",
+  "Practice positive self-talk for 5 minutes.",
+  "Stretch your body for 10 minutes.",
+  "Watch a short inspiring video.",
+  "Say thank you to someone you often forget to.",
+  "Take a picture of something beautiful today.",
+  "Write 3 affirmations and say them aloud.",
+  "Do one random act of kindness.",
+  "Forgive someone in your heart today.",
+  "Spend 15 minutes doing something creative.",
+  "Turn off your phone for 30 minutes.",
+  "Make a to-do list and complete one item.",
+  "Learn one new thing today.",
+  "Meditate for 5 minutes.",
+  "Write down 3 of your strengths.",
+  "Say something nice to yourself out loud.",
+  "Listen to nature sounds for 10 minutes.",
+  "Reflect on a happy memory.",
+  "Don't complain for the next 4 hours.",
+  "Make a gratitude jar or list.",
+  "Give a family member a hug or kind words.",
+  "Declutter something small (like a drawer).",
+  "Watch the sunrise or sunset if possible.",
+  "Plan a fun or relaxing activity for the week.",
+  "Read 1 page from an inspiring book.",
+  "Donate or give away something you don't need.",
+  "Practice patience in a tough moment.",
+  "Avoid negative news for one whole day.",
+  "Write 5 kind words about yourself.",
+  "Do 10 minutes of light exercise or yoga.",
+  "Help someone solve a small problem.",
+  "Laugh on purpose — watch something funny.",
+  "Look at the stars or moon and reflect.",
+  "Go to bed 30 minutes earlier today.",
+  "Celebrate your progress so far!"
+];
+
+function toggleAuth() {
+  document.getElementById('auth-title').textContent = 'Login';
+  document.querySelector('#auth-box button').onclick = login;
+  document.getElementById('name').style.display = 'none';
+}
+
+function signup() {
+  const name = document.getElementById('name').value;
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('password').value;
+  if (name && email && pass) {
+    localStorage.setItem('bioom_user', JSON.stringify({name, email, pass, day: 0, lastDone: null}));
+    loadApp();
+  } else {
+    alert('Please fill all fields!');
+  }
+}
+
+function login() {
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('password').value;
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  if (user && user.email === email && user.pass === pass) {
+    loadApp();
+  } else {
+    alert('Invalid credentials');
+  }
+}
+
+function loadApp() {
+  document.getElementById('auth-box').classList.add('hidden');
+  document.getElementById('main-box').classList.remove('hidden');
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  document.getElementById('welcome-msg').textContent = `Welcome, ${user.name}`;
+  showMission();
+}
+
+function showMission() {
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  const now = Date.now();
+  const lastDone = user.lastDone ? parseInt(user.lastDone) : 0;
+  const nextTime = lastDone + 24 * 60 * 60 * 1000;
+
+  if (user.day >= missions.length) {
+    document.getElementById('mission-title').textContent = "Congratulations!";
+    document.getElementById('mission-text').textContent = "You have completed all 50 missions!";
+    document.getElementById('done-btn').style.display = 'none';
+    return;
+  }
+
+  if (now < nextTime && user.day > 0) {
+    const timeLeft = Math.ceil((nextTime - now) / (60 * 1000));
+    document.getElementById('timer-info').textContent = `Next mission in ${timeLeft} minutes.`;
+    document.getElementById('done-btn').disabled = true;
+  } else {
+    document.getElementById('timer-info').textContent = "";
+    document.getElementById('done-btn').disabled = false;
+  }
+
+  document.getElementById('mission-title').textContent = `Day ${user.day + 1} Mission`;
+  document.getElementById('mission-text').textContent = missions[user.day];
+}
+
+function markDone() {
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  user.day += 1;
+  user.lastDone = Date.now();
+  localStorage.setItem('bioom_user', JSON.stringify(user));
+  showMission();
+}
+
+function logout() {
+  location.reload();
+}
+
+window.onload = () => {
+  const user = localStorage.getItem('bioom_user');
+  if (user) loadApp();
+}
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BIOOM50 Challenge</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eaf6f6;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 400px;
+      margin: 50px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2, h3 {
+      text-align: center;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="auth-box">
+  <h2 id="auth-title">Sign Up</h2>
+  <input type="text" id="name" placeholder="Your Name" />
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Password" />
+  <button onclick="signup()">Sign Up</button>
+  <p>Already registered? <a href="#" onclick="toggleAuth()">Login</a></p>
+</div>
+
+<div class="container hidden" id="main-box">
+  <h2 id="welcome-msg">Welcome</h2>
+  <h3 id="mission-title">Day 1 Mission</h3>
+  <p id="mission-text"></p>
+  <button id="done-btn" onclick="markDone()">Done</button>
+  <p id="timer-info" style="color: green;"></p>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+const missions = [
+  "Write down 3 things you're grateful for.",
+  "Drink at least 8 glasses of water today.",
+  "Smile at yourself in the mirror for 1 minute.",
+  "Take a 10-minute walk outside.",
+  "Send a kind message to a friend.",
+  "Help someone without expecting anything in return.",
+  "Listen to your favorite song with full attention.",
+  "Take 5 deep breaths slowly and mindfully.",
+  "Clean or organize one small space around you.",
+  "Write a short letter to your future self.",
+  "Read a motivational quote and reflect on it.",
+  "Avoid social media for 1 hour today.",
+  "Compliment someone genuinely.",
+  "Spend 10 minutes in silence with no distractions.",
+  "Eat one healthy meal today mindfully.",
+  "Write down one small goal for this week.",
+  "Practice positive self-talk for 5 minutes.",
+  "Stretch your body for 10 minutes.",
+  "Watch a short inspiring video.",
+  "Say thank you to someone you often forget to.",
+  "Take a picture of something beautiful today.",
+  "Write 3 affirmations and say them aloud.",
+  "Do one random act of kindness.",
+  "Forgive someone in your heart today.",
+  "Spend 15 minutes doing something creative.",
+  "Turn off your phone for 30 minutes.",
+  "Make a to-do list and complete one item.",
+  "Learn one new thing today.",
+  "Meditate for 5 minutes.",
+  "Write down 3 of your strengths.",
+  "Say something nice to yourself out loud.",
+  "Listen to nature sounds for 10 minutes.",
+  "Reflect on a happy memory.",
+  "Don't complain for the next 4 hours.",
+  "Make a gratitude jar or list.",
+  "Give a family member a hug or kind words.",
+  "Declutter something small (like a drawer).",
+  "Watch the sunrise or sunset if possible.",
+  "Plan a fun or relaxing activity for the week.",
+  "Read 1 page from an inspiring book.",
+  "Donate or give away something you don't need.",
+  "Practice patience in a tough moment.",
+  "Avoid negative news for one whole day.",
+  "Write 5 kind words about yourself.",
+  "Do 10 minutes of light exercise or yoga.",
+  "Help someone solve a small problem.",
+  "Laugh on purpose — watch something funny.",
+  "Look at the stars or moon and reflect.",
+  "Go to bed 30 minutes earlier today.",
+  "Celebrate your progress so far!"
+];
+
+function toggleAuth() {
+  document.getElementById('auth-title').textContent = 'Login';
+  document.querySelector('#auth-box button').onclick = login;
+  document.getElementById('name').style.display = 'none';
+}
+
+function signup() {
+  const name = document.getElementById('name').value;
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('password').value;
+  if (name && email && pass) {
+    localStorage.setItem('bioom_user', JSON.stringify({name, email, pass, day: 0, lastDone: null}));
+    loadApp();
+  } else {
+    alert('Please fill all fields!');
+  }
+}
+
+function login() {
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('password').value;
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  if (user && user.email === email && user.pass === pass) {
+    loadApp();
+  } else {
+    alert('Invalid credentials');
+  }
+}
+
+function loadApp() {
+  document.getElementById('auth-box').classList.add('hidden');
+  document.getElementById('main-box').classList.remove('hidden');
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  document.getElementById('welcome-msg').textContent = `Welcome, ${user.name}`;
+  showMission();
+}
+
+function showMission() {
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  const now = Date.now();
+  const lastDone = user.lastDone ? parseInt(user.lastDone) : 0;
+  const nextTime = lastDone + 24 * 60 * 60 * 1000;
+
+  if (user.day >= missions.length) {
+    document.getElementById('mission-title').textContent = "Congratulations!";
+    document.getElementById('mission-text').textContent = "You have completed all 50 missions!";
+    document.getElementById('done-btn').style.display = 'none';
+    return;
+  }
+
+  if (now < nextTime && user.day > 0) {
+    const timeLeft = Math.ceil((nextTime - now) / (60 * 1000));
+    document.getElementById('timer-info').textContent = `Next mission in ${timeLeft} minutes.`;
+    document.getElementById('done-btn').disabled = true;
+  } else {
+    document.getElementById('timer-info').textContent = "";
+    document.getElementById('done-btn').disabled = false;
+  }
+
+  document.getElementById('mission-title').textContent = `Day ${user.day + 1} Mission`;
+  document.getElementById('mission-text').textContent = missions[user.day];
+}
+
+function markDone() {
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  user.day += 1;
+  user.lastDone = Date.now();
+  localStorage.setItem('bioom_user', JSON.stringify(user));
+  showMission();
+}
+
+function logout() {
+  location.reload();
+}
+
+window.onload = () => {
+  const user = localStorage.getItem('bioom_user');
+  if (user) loadApp();
+}
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BIOOM50 Challenge</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eaf6f6;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 400px;
+      margin: 50px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2, h3 {
+      text-align: center;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="auth-box">
+  <h2 id="auth-title">Sign Up</h2>
+  <input type="text" id="name" placeholder="Your Name" />
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Password" />
+  <button onclick="signup()">Sign Up</button>
+  <p>Already registered? <a href="#" onclick="toggleAuth()">Login</a></p>
+</div>
+
+<div class="container hidden" id="main-box">
+  <h2 id="welcome-msg">Welcome</h2>
+  <h3 id="mission-title">Day 1 Mission</h3>
+  <p id="mission-text"></p>
+  <button id="done-btn" onclick="markDone()">Done</button>
+  <p id="timer-info" style="color: green;"></p>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+const missions = [
+  "Write down 3 things you're grateful for.",
+  "Drink at least 8 glasses of water today.",
+  "Smile at yourself in the mirror for 1 minute.",
+  "Take a 10-minute walk outside.",
+  "Send a kind message to a friend.",
+  "Help someone without expecting anything in return.",
+  "Listen to your favorite song with full attention.",
+  "Take 5 deep breaths slowly and mindfully.",
+  "Clean or organize one small space around you.",
+  "Write a short letter to your future self.",
+  "Read a motivational quote and reflect on it.",
+  "Avoid social media for 1 hour today.",
+  "Compliment someone genuinely.",
+  "Spend 10 minutes in silence with no distractions.",
+  "Eat one healthy meal today mindfully.",
+  "Write down one small goal for this week.",
+  "Practice positive self-talk for 5 minutes.",
+  "Stretch your body for 10 minutes.",
+  "Watch a short inspiring video.",
+  "Say thank you to someone you often forget to.",
+  "Take a picture of something beautiful today.",
+  "Write 3 affirmations and say them aloud.",
+  "Do one random act of kindness.",
+  "Forgive someone in your heart today.",
+  "Spend 15 minutes doing something creative.",
+  "Turn off your phone for 30 minutes.",
+  "Make a to-do list and complete one item.",
+  "Learn one new thing today.",
+  "Meditate for 5 minutes.",
+  "Write down 3 of your strengths.",
+  "Say something nice to yourself out loud.",
+  "Listen to nature sounds for 10 minutes.",
+  "Reflect on a happy memory.",
+  "Don't complain for the next 4 hours.",
+  "Make a gratitude jar or list.",
+  "Give a family member a hug or kind words.",
+  "Declutter something small (like a drawer).",
+  "Watch the sunrise or sunset if possible.",
+  "Plan a fun or relaxing activity for the week.",
+  "Read 1 page from an inspiring book.",
+  "Donate or give away something you don't need.",
+  "Practice patience in a tough moment.",
+  "Avoid negative news for one whole day.",
+  "Write 5 kind words about yourself.",
+  "Do 10 minutes of light exercise or yoga.",
+  "Help someone solve a small problem.",
+  "Laugh on purpose — watch something funny.",
+  "Look at the stars or moon and reflect.",
+  "Go to bed 30 minutes earlier today.",
+  "Celebrate your progress so far!"
+];
+
+function toggleAuth() {
+  document.getElementById('auth-title').textContent = 'Login';
+  document.querySelector('#auth-box button').onclick = login;
+  document.getElementById('name').style.display = 'none';
+}
+
+function signup() {
+  const name = document.getElementById('name').value;
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('password').value;
+  if (name && email && pass) {
+    localStorage.setItem('bioom_user', JSON.stringify({name, email, pass, day: 0, lastDone: null}));
+    loadApp();
+  } else {
+    alert('Please fill all fields!');
+  }
+}
+
+function login() {
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('password').value;
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  if (user && user.email === email && user.pass === pass) {
+    loadApp();
+  } else {
+    alert('Invalid credentials');
+  }
+}
+
+function loadApp() {
+  document.getElementById('auth-box').classList.add('hidden');
+  document.getElementById('main-box').classList.remove('hidden');
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  document.getElementById('welcome-msg').textContent = `Welcome, ${user.name}`;
+  showMission();
+}
+
+function showMission() {
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  const now = Date.now();
+  const lastDone = user.lastDone ? parseInt(user.lastDone) : 0;
+  const nextTime = lastDone + 24 * 60 * 60 * 1000;
+
+  if (user.day >= missions.length) {
+    document.getElementById('mission-title').textContent = "Congratulations!";
+    document.getElementById('mission-text').textContent = "You have completed all 50 missions!";
+    document.getElementById('done-btn').style.display = 'none';
+    return;
+  }
+
+  if (now < nextTime && user.day > 0) {
+    const timeLeft = Math.ceil((nextTime - now) / (60 * 1000));
+    document.getElementById('timer-info').textContent = `Next mission in ${timeLeft} minutes.`;
+    document.getElementById('done-btn').disabled = true;
+  } else {
+    document.getElementById('timer-info').textContent = "";
+    document.getElementById('done-btn').disabled = false;
+  }
+
+  document.getElementById('mission-title').textContent = `Day ${user.day + 1} Mission`;
+  document.getElementById('mission-text').textContent = missions[user.day];
+}
+
+function markDone() {
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  user.day += 1;
+  user.lastDone = Date.now();
+  localStorage.setItem('bioom_user', JSON.stringify(user));
+  showMission();
+}
+
+function logout() {
+  location.reload();
+}
+
+window.onload = () => {
+  const user = localStorage.getItem('bioom_user');
+  if (user) loadApp();
+}
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BIOOM50 Challenge</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eaf6f6;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 400px;
+      margin: 50px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2, h3 {
+      text-align: center;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="auth-box">
+  <h2 id="auth-title">Sign Up</h2>
+  <input type="text" id="name" placeholder="Your Name" />
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Password" />
+  <button onclick="signup()">Sign Up</button>
+  <p>Already registered? <a href="#" onclick="toggleAuth()">Login</a></p>
+</div>
+
+<div class="container hidden" id="main-box">
+  <h2 id="welcome-msg">Welcome</h2>
+  <h3 id="mission-title">Day 1 Mission</h3>
+  <p id="mission-text"></p>
+  <button id="done-btn" onclick="markDone()">Done</button>
+  <p id="timer-info" style="color: green;"></p>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+const missions = [
+  "Write down 3 things you're grateful for.",
+  "Drink at least 8 glasses of water today.",
+  "Smile at yourself in the mirror for 1 minute.",
+  "Take a 10-minute walk outside.",
+  "Send a kind message to a friend.",
+  "Help someone without expecting anything in return.",
+  "Listen to your favorite song with full attention.",
+  "Take 5 deep breaths slowly and mindfully.",
+  "Clean or organize one small space around you.",
+  "Write a short letter to your future self.",
+  "Read a motivational quote and reflect on it.",
+  "Avoid social media for 1 hour today.",
+  "Compliment someone genuinely.",
+  "Spend 10 minutes in silence with no distractions.",
+  "Eat one healthy meal today mindfully.",
+  "Write down one small goal for this week.",
+  "Practice positive self-talk for 5 minutes.",
+  "Stretch your body for 10 minutes.",
+  "Watch a short inspiring video.",
+  "Say thank you to someone you often forget to.",
+  "Take a picture of something beautiful today.",
+  "Write 3 affirmations and say them aloud.",
+  "Do one random act of kindness.",
+  "Forgive someone in your heart today.",
+  "Spend 15 minutes doing something creative.",
+  "Turn off your phone for 30 minutes.",
+  "Make a to-do list and complete one item.",
+  "Learn one new thing today.",
+  "Meditate for 5 minutes.",
+  "Write down 3 of your strengths.",
+  "Say something nice to yourself out loud.",
+  "Listen to nature sounds for 10 minutes.",
+  "Reflect on a happy memory.",
+  "Don't complain for the next 4 hours.",
+  "Make a gratitude jar or list.",
+  "Give a family member a hug or kind words.",
+  "Declutter something small (like a drawer).",
+  "Watch the sunrise or sunset if possible.",
+  "Plan a fun or relaxing activity for the week.",
+  "Read 1 page from an inspiring book.",
+  "Donate or give away something you don't need.",
+  "Practice patience in a tough moment.",
+  "Avoid negative news for one whole day.",
+  "Write 5 kind words about yourself.",
+  "Do 10 minutes of light exercise or yoga.",
+  "Help someone solve a small problem.",
+  "Laugh on purpose — watch something funny.",
+  "Look at the stars or moon and reflect.",
+  "Go to bed 30 minutes earlier today.",
+  "Celebrate your progress so far!"
+];
+
+function toggleAuth() {
+  document.getElementById('auth-title').textContent = 'Login';
+  document.querySelector('#auth-box button').onclick = login;
+  document.getElementById('name').style.display = 'none';
+}
+
+function signup() {
+  const name = document.getElementById('name').value;
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('password').value;
+  if (name && email && pass) {
+    localStorage.setItem('bioom_user', JSON.stringify({name, email, pass, day: 0, lastDone: null}));
+    loadApp();
+  } else {
+    alert('Please fill all fields!');
+  }
+}
+
+function login() {
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('password').value;
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  if (user && user.email === email && user.pass === pass) {
+    loadApp();
+  } else {
+    alert('Invalid credentials');
+  }
+}
+
+function loadApp() {
+  document.getElementById('auth-box').classList.add('hidden');
+  document.getElementById('main-box').classList.remove('hidden');
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  document.getElementById('welcome-msg').textContent = `Welcome, ${user.name}`;
+  showMission();
+}
+
+function showMission() {
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  const now = Date.now();
+  const lastDone = user.lastDone ? parseInt(user.lastDone) : 0;
+  const nextTime = lastDone + 24 * 60 * 60 * 1000;
+
+  if (user.day >= missions.length) {
+    document.getElementById('mission-title').textContent = "Congratulations!";
+    document.getElementById('mission-text').textContent = "You have completed all 50 missions!";
+    document.getElementById('done-btn').style.display = 'none';
+    return;
+  }
+
+  if (now < nextTime && user.day > 0) {
+    const timeLeft = Math.ceil((nextTime - now) / (60 * 1000));
+    document.getElementById('timer-info').textContent = `Next mission in ${timeLeft} minutes.`;
+    document.getElementById('done-btn').disabled = true;
+  } else {
+    document.getElementById('timer-info').textContent = "";
+    document.getElementById('done-btn').disabled = false;
+  }
+
+  document.getElementById('mission-title').textContent = `Day ${user.day + 1} Mission`;
+  document.getElementById('mission-text').textContent = missions[user.day];
+}
+
+function markDone() {
+  const user = JSON.parse(localStorage.getItem('bioom_user'));
+  user.day += 1;
+  user.lastDone = Date.now();
+  localStorage.setItem('bioom_user', JSON.stringify(user));
+  showMission();
+}
+
+function logout() {
+  location.reload();
+}
+
+window.onload = () => {
+  const user = localStorage.getItem('bioom_user');
+  if (user) loadApp();
+}
+</script>
+</body>
+</html>
